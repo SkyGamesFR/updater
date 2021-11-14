@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group 'fr.darki'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: '*.jar')
+}
+
+test {
+    useJUnitPlatform()
+}
