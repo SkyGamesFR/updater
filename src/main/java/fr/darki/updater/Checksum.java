@@ -5,7 +5,7 @@ import java.security.MessageDigest;
 import java.util.Objects;
 
 public class Checksum {
-    public Checksum() {
+    public Checksum(String path) {
     }
 
     public static void main(String[] args) {
@@ -31,19 +31,16 @@ public class Checksum {
 
     public static String get(String path) throws Exception {
         byte[] b = create(path);
-        String result = "";
+        StringBuilder result = new StringBuilder();
 
-        for (int i=0; i < b.length; i++) {
-            result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1);
+        for (int i : b) {
+            result.append(Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1));
         }
 
-        return result;
+        return result.toString();
     }
 
-    public static Boolean check(String path, String checksum) throws Exception {
-        if (Objects.equals(get(path), checksum)) {
-            return true;
-        }
-        return false;
+    public static Boolean compare(String path, String checksum) throws Exception {
+        return Objects.equals(get(path), checksum);
     }
 }
