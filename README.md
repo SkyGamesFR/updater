@@ -11,5 +11,5 @@
 ---
 
 ### Feature
-* Simple use of the (download server)[https://github.com/SkyGamesFR/server]
+* Simple use of the [download server](https://github.com/SkyGamesFR/server)
 * Efficient and fast downloads
