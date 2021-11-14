@@ -2,7 +2,7 @@
 
 <h1 align="center">SkyGames Updater</h1>
 
-<em><h5 align="center">A java downloader for our download server</h5></em>
+<em><h5 align="center">A powerfull java downloader meant to be used for minecraft launchers</h5></em>
 
 **System Requirements**
 
@@ -11,5 +11,5 @@
 ---
 
 ### Feature
-* Simple use of the [download server](https://github.com/SkyGamesFR/server)
+* Simple and easy to use with our [download server](https://github.com/SkyGamesFR/server)
 * Efficient and fast downloads
