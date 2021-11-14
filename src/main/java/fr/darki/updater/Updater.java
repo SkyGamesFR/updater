@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import fr.darki.updater.json.Connection;
-import fr.holo.chaundl.json.ConnectionJson;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -183,8 +182,7 @@ public class Updater {
     }
 
     private static void downloadFile(String path) throws IOException {
-        String dlUrl = url.substring(url.length() - 1).equals("/") ? url: (url + "/") + ConnectionJson.folder + "/" + path;
-
+        String dlUrl = url.substring(url.length() - 1).equals("/") ? url: (url + "/") + folder + "/" + path;
         System.out.println("[SkyGames Updater] Downloading: " + path);
         InputStream is = null;
         FileOutputStream fos = null;
