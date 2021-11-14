@@ -10,8 +10,7 @@ import java.nio.charset.Charset;
 public class Connection {
     public static String url;
 
-    public Connection(String url) {
-        this.url = url;
+    public Connection() {
     }
 
     private static String readAll(Reader rd)throws IOException {
@@ -23,9 +22,9 @@ public class Connection {
         return sb.toString();
     }
 
-    public static JSONObject readJSONFromUrl(String path) throws IOException, JSONException {
+    public static JSONObject readJSON(String path) throws IOException, JSONException {
         String dlURL;
-        dlURL = url.substring(url.length() - 1).equals("/") ? url.substring(0, url.length() - 1): url + "/" + path + "/";
+        dlURL = url.substring(url.length() - 1).equals("/") ? url: (url + "/") + path + "/";
 
         InputStream is = (new URL(dlURL)).openStream();
 
