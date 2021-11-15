@@ -7,8 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,42 +26,42 @@ public class Updater {
     private static Integer totalSize = 0;
     private static JSONArray files = null;
     private static JSONArray ignore = null;
-    private static List<String> allowedFiles= new ArrayList();;
+    private static final Map<String, JSONObject> allowedFiles = new HashMap<>();
 
     public Updater(String url, String folder, String dir) {
-        this.url = url;
-        this.folder = folder;
-        this.dir = new File(folderSeparator(dir));
-        Connection.url = this.url;
+        Updater.url = url;
+        Updater.folder = folder;
+        Updater.dir = new File(folderSeparator(dir));
+        Connection.url = Updater.url;
     }
 
-    private void init() throws IOException {
+    private void init() {
         System.out.println("SkyGames Updater by DarKi");
 
         try {
             JSONObject json = Connection.readJSON(folder);
-            this.files = json.getJSONArray("files");
-            this.ignore = json.getJSONArray("ignore");
+            files = json.getJSONArray("files");
+            ignore = json.getJSONArray("ignore");
         } catch (JSONException | IOException err) {
             err.printStackTrace();
         }
 
         int i;
-        for(i = 0; i < this.files.length(); ++i) {
+        for(i = 0; i < files.length(); ++i) {
             try {
-                allowedFiles.add(this.files.getJSONObject(i).getString("path"));
-                totalSize += this.files.getJSONObject(i).getInt("size");
+                allowedFiles.put(files.getJSONObject(i).getString("path"), files.getJSONObject(i));
+                totalSize += files.getJSONObject(i).getInt("size");
             } catch (JSONException err) {
                 err.printStackTrace();
             }
         }
 
-        if (this.ignore.length() != 0) {
+        if (ignore.length() != 0) {
             System.out.println("************IGNORE_LIST************\n");
-            for(i = 0; i < this.ignore.length(); ++i) {
+            for(i = 0; i < ignore.length(); ++i) {
                 try {
-                    allowedFiles.add(this.ignore.getJSONObject(i).getString("path"));
-                    System.out.println("- " + this.ignore.getJSONObject(i).getString("path"));
+                    allowedFiles.put(ignore.getJSONObject(i).getString("path"), ignore.getJSONObject(i));
+                    System.out.println("- " + ignore.getJSONObject(i).getString("path"));
                 } catch (JSONException err) {
                     err.printStackTrace();
                 }
@@ -72,22 +71,24 @@ public class Updater {
     }
 
     public void start() throws Exception {
-        if (!this.dir.exists()) {
-            this.dir.mkdirs();
+        if (!dir.exists()) {
+            if(!dir.mkdirs()) System.out.println("An error occurred, failed to create directory " + dir.getAbsolutePath());
         }
 
         this.init();
 
-        for(int i = 0; i < this.files.length(); ++i) {
+        for(int i = 0; i < files.length(); ++i) {
             try {
-                JSONObject json = this.files.getJSONObject(i);
+                JSONObject json = files.getJSONObject(i);
                 String path = json.getString("path");
                 String checksum = json.getString("md5");
                 long size = json.getInt("size");
-                File file = new File(this.dir, path);
+                File file = new File(dir, path);
 
                 while (!file.exists() || Checksum.compare(path, checksum) || file.length() != size) {
-                    if (file.exists()) file.delete();
+                    if (file.exists()) {
+                        if (!file.delete()) System.out.println("An error occurred, could not delete " + file.getAbsolutePath());
+                    }
                     downloadFile(path);
                 }
             } catch (JSONException | IOException err) {
@@ -112,8 +113,8 @@ public class Updater {
         try {
             json = Connection.readJSON("status");
             try {
-                Boolean status = json.getBoolean("active");
-                if (status == true) return json.getString("message");
+                boolean status = json.getBoolean("active");
+                if (status) return json.getString("message");
                 else return null;
             } catch (JSONException err) {
                 err.printStackTrace();
@@ -126,55 +127,45 @@ public class Updater {
 
     private static String folderSeparator(String path) {
         int count = 0;
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for(int i = 0; i < path.length(); ++i) {
             if (path.charAt(i) == '/') {
-                result = result + "\\" + path.split("/")[count];
+                result.append("\\").append(path.split("/")[count]);
                 ++count;
             }
         }
-        return result;
+        return result.toString();
     }
 
     private static void folderMkdir(String path) {
         File f = new File(dir,  folderSeparator(path));
-        f.mkdirs();
+        if (!f.mkdirs()) System.out.println("An error occurred");
     }
 
     private static void checkFiles() {
         try {
-            Stream walk = Files.walk(Paths.get(dir.getAbsolutePath()));
-
-            try {
-                List<String> result = (List)walk.filter((var0) -> {
-                    return Files.isRegularFile((Path) var0, new LinkOption[0]);
-                }).map((x) -> {
-                    return x.toString();
-                }).collect(Collectors.toList());
+            try (Stream<Path> walk = Files.walk(Paths.get(dir.getAbsolutePath()))) {
+                List<Path> result;
+                result = walk.filter(Files::isRegularFile)
+                        .collect(Collectors.toList());
                 result.forEach((e) -> {
-                    if (!allowedFiles.contains(e)) {
-                        (new File(e)).delete();
-                    }
-                });
-                int i;
-                for(i = 0; i < ignore.length(); ++i) {
-                    try {
-                        JSONObject json = ignore.getJSONObject(i);
-                        if (json.getString("type") == "file") {
-                            File file = new File(dir, folderSeparator(json.getString("path")));
-                            if (!Checksum.compare(json.getString("path"), json.getString("md5")) || file.length() != json.getInt("size")) {
-                                file.delete();
+                    String str = String.valueOf(e);
+                    File file = new File(str);
+                    if (!allowedFiles.containsKey(str)) {
+                        if (!file.delete()) System.out.println("An error occurred");
+                    } else {
+                        JSONObject json = allowedFiles.get(str);
+                        if (Objects.equals(json.getString("type"), "file")) {
+                            try {
+                                if (!Checksum.compare(json.getString("path"), json.getString("md5")) || file.length() != json.getInt("size")) {
+                                    if (!file.delete()) System.out.println("An error occurred");
+                                }
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
                             }
                         }
-                    } catch (Exception err) {
-                        err.printStackTrace();
                     }
-                }
-            } finally {
-                if (walk != null) {
-                    walk.close();
-                }
-
+                });
             }
         } catch (IOException err) {
             err.printStackTrace();
@@ -182,7 +173,7 @@ public class Updater {
     }
 
     private static void downloadFile(String path) throws IOException {
-        String dlUrl = url.substring(url.length() - 1).equals("/") ? url: (url + "/") + folder + "/" + path;
+        String dlUrl = url.endsWith("/") ? url: (url + "/") + folder + "/" + path;
         System.out.println("[SkyGames Updater] Downloading: " + path);
         InputStream is = null;
         FileOutputStream fos = null;
